@@ -7,7 +7,7 @@ export default function App() {
   return (
     <div style = {{fontFamily: "system-ui", padding: 24}}>
       <h1>IV Events</h1>
-      <p>The React Frontend is Running!</p>
+      <p>See what's going on in and around UC Santa Barbara!</p>
     </div>
   )
 }
