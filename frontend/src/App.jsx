@@ -6,9 +6,8 @@ import './App.css'
 export default function App() {
   return (
     <div style = {{fontFamily: "system-ui", padding: 24}}>
-      <h1>IV Events - Made by Abhiram A.</h1>
+      <h1>IV Events</h1>
       <p>The React Frontend is Running!</p>
-      <p>URL Path: {window.location.pathname}</p>
     </div>
   )
 }
