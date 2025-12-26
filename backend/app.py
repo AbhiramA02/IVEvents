@@ -1,5 +1,7 @@
 import os
-from flask import Flask
+import uuid
+from flask import Flask, request
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from extensions import db, migrate
 
@@ -25,9 +27,42 @@ def create_app():
 
   import models
 
+  from auth_routes import auth_bp, init_oauth
+  init_oauth(app)
+  app.register_blueprint(auth_bp)
+
   @app.get("/health")
   def health():
     return {"ok": True}
+  
+  @app.get("/me")
+  def me():
+    from models import User, Session
+
+    session_id = request.cookies.get("session_id")
+    if not session_id:
+      return {"user": None}
+    
+    try:
+      session_uuid = uuid.UUID(session_id)
+    except ValueError:
+      return {"user": None}
+
+    s = Session.query.filter_by(id=session_id, revoked_at=None).first()
+    if not s or (s.expires_at and s.expires_at < datetime.now(timezone.utc)):
+      return {"user": None}
+    
+    u = db.session.get(User, s.user_id)
+    if not u:
+      return {"user": None}
+    
+    return {
+      "user": {
+        "id": str(u.id),
+        "email": u.email,
+        "name": u.name
+      }
+    }
   
   return app
 
