@@ -5,6 +5,13 @@ from extensions import db, migrate
 
 load_dotenv()
 
+"""
+This file sets up the app, 
+connects it to the database, 
+wires in the database tools, 
+and makes sure the schema-change system knows what tables you’ve defined.
+"""
+
 def create_app():
   app = Flask(__name__)
 
