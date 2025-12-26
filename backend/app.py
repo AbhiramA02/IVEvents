@@ -1,14 +1,27 @@
-from flask import Flask, jsonify
+import os
+from flask import Flask
+from dotenv import load_dotenv
+from extensions import db, migrate
 
-app = Flask(__name__)
+load_dotenv()
 
-@app.get("/health")
-def health():
-  return jsonify(ok=True)
+def create_app():
+  app = Flask(__name__)
 
-@app.get("/api/hello")
-def hello():
-  return jsonify(message = "Hello from Flask backend!")
+  app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+  app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-if __name__ == "__main__":
-  app.run(port=5000, debug=True)
+  app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-only")
+
+  db.init_app(app)
+  migrate.init_app(app, db)
+
+  import models
+
+  @app.get("/health")
+  def health():
+    return {"ok": True}
+  
+  return app
+
+app = create_app()
