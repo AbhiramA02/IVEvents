@@ -29,7 +29,14 @@ export default function App() {
     <div style = {{fontFamily: "system-ui", padding: 24}}>
       <h1>IV Events</h1>
       <p>See what's going on in and around UC Santa Barbara!</p>
-      {user ? <div>Logged in as {user.email}.</div> : <div>Not logged in.</div>}
+      {user ? (
+        <div>Logged in as {user.email}.</div>
+      ) : (
+        <>
+          <div>Not logged in.</div>
+          <AuthButtons/>
+        </>
+        )}
     </div>
   )
 }
