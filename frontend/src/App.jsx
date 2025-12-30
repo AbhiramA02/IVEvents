@@ -10,7 +10,7 @@ function AuthButtons() {
   };
 
   return (
-    <div style = {{display: "flex", gap: 12}}>
+    <div style = {{display: "flex", justifyContent: "center", marginTop: 12}}>
       <button onClick={startGoogle}>Login</button>
     </div>
   );
