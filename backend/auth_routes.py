@@ -52,12 +52,13 @@ def google_callback(): #Handler to redirect back to app after Login
 
   frontend_url = os.getenv("FRONTEND_URL", "/")
   resp = make_response(redirect(frontend_url))
+  is_prod = os.getenv("FLASK_ENV") == "production"
 
   resp.set_cookie(
     "session_id",
     str(session.id),
     httponly=True,
-    secure=True,
+    secure=is_prod,
     samesite="Lax",
     max_age=14*24*60*60,
     path="/"
