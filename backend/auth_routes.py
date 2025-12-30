@@ -70,12 +70,17 @@ def logout(): #For User Logouts
   session_id = request.cookies.get("session_id")
   resp = make_response({"ok": True})
 
-  resp.set_cookie("session_id", "", expires=0, path="/")
+  resp.delete_cookie("session_id", path="/")
 
   if not session_id:
     return resp
   
-  s = Session.query.filter_by(id=session_id, revoked_at=None).first()
+  try:
+    session_uuid = uuid.UUID(session_id)
+  except ValueError:
+    return resp
+  
+  s = Session.query.filter_by(id=session_uuid, revoked_at=None).first()
   if s:
     s.revoked_at = datetime.now(timezone.utc)
     db.session.commit()

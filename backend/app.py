@@ -48,7 +48,7 @@ def create_app():
     except ValueError:
       return {"user": None}
 
-    s = Session.query.filter_by(id=session_id, revoked_at=None).first()
+    s = Session.query.filter_by(id=session_uuid, revoked_at=None).first()
     if not s or (s.expires_at and s.expires_at < datetime.now(timezone.utc)):
       return {"user": None}
     
