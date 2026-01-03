@@ -6,7 +6,7 @@ import './App.css'
 
 function AuthButtons() {
   const startGoogle = () => {
-    window.location.href = "/auth/google/start";
+    window.location.href = "/api/auth/google/start";
   };
 
   return (

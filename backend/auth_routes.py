@@ -6,6 +6,8 @@ from authlib.integrations.flask_client import OAuth
 from extensions import db
 from models import User, Session
 
+import uuid
+
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 oauth = OAuth()
 
@@ -86,3 +88,29 @@ def logout(): #For User Logouts
     db.session.commit()
 
   return resp
+
+@auth_bp.get("/me")
+def auth_me():
+    session_id = request.cookies.get("session_id")
+    # No session cookie? No user.
+    if not session_id:
+        return {"user": None}, 200
+    try:
+        session_uuid = uuid.UUID(session_id)
+    except ValueError:
+        # cookie is malformed
+        return {"user": None}, 200
+
+    s = Session.query.filter_by(id=session_uuid, revoked_at=None).first()
+    if not s or not s.user:
+        return {"user": None}, 200
+
+    user = s.user
+    return {
+        "user": {
+            "id": str(user.id),
+            "email": user.email,
+            "name": user.name,
+            "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
+        }
+    }, 200
