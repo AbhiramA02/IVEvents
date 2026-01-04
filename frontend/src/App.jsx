@@ -19,7 +19,7 @@ export default function App() {
   const [status, setStatus] = useState("Checking session...");
 
   useEffect(() => {
-    fetch("/api/auth/me", { credentials: "include" })
+    fetch("/api/me", { credentials: "include" })
       .then(async (r) => {
         const data = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(data?.error || `HTTP ${r.status}`);
