@@ -91,45 +91,29 @@ def logout(): #For User Logouts
 
 @auth_bp.get("/me")
 def auth_me():
-    session_id = request.cookies.get("session_id")
-    # No session cookie? No user.
-    if not session_id:
-        return {"user": None}, 200
-    try:
-        session_uuid = uuid.UUID(session_id)
-    except ValueError:
-        # cookie is malformed
-        return {"user": None}, 200
-
-    s = Session.query.filter_by(id=session_uuid, revoked_at=None).first()
-    if not s or not s.user:
-        return {"user": None}, 200
-
-    user = s.user
-    return {
-        "user": {
-            "id": str(user.id),
-            "email": user.email,
-            "name": user.name,
-            "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
-        }
-    }, 200
-
-@auth_bp.post("/logout")
-def logout():
   session_id = request.cookies.get("session_id")
-  
-  if session_id:
-    Session.query.filter_by(id=session_id).delete()
-    db.session.commit()
 
-  resp = make_response(jsonify({"ok": True}))  
+  resp = make_response(jsonify({"ok": True}))
+
+  is_prod = os.getenv("FLASK_ENV") == "production"
   resp.delete_cookie(
-     "session_id",
-     path="/",
-     domain="ivevents.abhiramagina.xyz",
-     secure=True,
-     samesite="Lax",
+    "session_id",
+    path="/",
+    secure=is_prod,
+    samesite="Lax",
   )
 
-  return resp 
+  if not session_id:
+    return resp
+  
+  try:
+    session_uuid = uuid.UUID(session_id)
+  except ValueError:
+    return resp
+  
+  s = Session.query.filter_by(id=session_uuid, revoked_at=None).first()
+  if s:
+    s.revoked_at = datetime.now(timezone.utc)
+    db.session.commit()
+
+  return resp
