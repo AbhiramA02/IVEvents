@@ -27,11 +27,11 @@ export default function App() {
       })
       .then((data) => {
         setUser(data.user);
-        setStatus(data.user ? "Logged in" : "Not logged in");
+        //setStatus(data.user ? "Logged in" : "Not logged in");
       })
       .catch((e) => {
         setUser(null);
-        setStatus(`Session check failed: ${e.message}`);
+        //setStatus(`Session check failed: ${e.message}`);
       });
   }, []);
 
