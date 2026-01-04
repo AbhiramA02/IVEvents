@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timezone
-from flask import Blueprint, redirect, make_response, request
+from flask import Blueprint, redirect, make_response, request, jsonify
 from authlib.integrations.flask_client import OAuth
 
 from extensions import db
@@ -118,19 +118,18 @@ def auth_me():
 @auth_bp.post("/logout")
 def logout():
   session_id = request.cookies.get("session_id")
+  
   if session_id:
     Session.query.filter_by(id=session_id).delete()
     db.session.commit()
 
-  resp = make_response({"ok": True})
-  resp.set_cookie(
+  resp = make_response(jsonify({"ok": True}))  
+  resp.delete_cookie(
      "session_id",
-     "",
-     max_age=0,
      path="/",
+     domain="ivevents.abhiramagina.xyz",
      secure=True,
-     httponly=True,
      samesite="Lax",
   )
-  return resp
-   
+
+  return resp 
