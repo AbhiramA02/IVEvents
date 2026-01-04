@@ -24,7 +24,7 @@ def init_oauth(app):
 @auth_bp.get("/google/start")
 def google_start(): #Sends User to Login Screen
   redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
-  return oauth.google.authorize_redirect(redirect_uri)
+  return oauth.google.authorize_redirect(redirect_uri, prompt="select_account")
 
 @auth_bp.get("/google/callback")
 def google_callback(): #Handler to redirect back to app after Login
