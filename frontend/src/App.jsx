@@ -16,7 +16,7 @@ function AuthButtons() {
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [status, setStatus] = useState("Checking session...");
+  //const [status, setStatus] = useState("Checking session...");
 
   useEffect(() => {
     fetch("/api/me", { credentials: "include" })
