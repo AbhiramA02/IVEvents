@@ -90,30 +90,19 @@ def logout(): #For User Logouts
   return resp
 
 @auth_bp.get("/me")
-def auth_me():
+def me():
   session_id = request.cookies.get("session_id")
-
-  resp = make_response(jsonify({"ok": True}))
-
-  is_prod = os.getenv("FLASK_ENV") == "production"
-  resp.delete_cookie(
-    "session_id",
-    path="/",
-    secure=is_prod,
-    samesite="Lax",
-  )
-
   if not session_id:
-    return resp
+    return {"user": None}, 200
   
   try:
     session_uuid = uuid.UUID(session_id)
   except ValueError:
-    return resp
+    return {"user": None}, 200
   
   s = Session.query.filter_by(id=session_uuid, revoked_at=None).first()
-  if s:
-    s.revoked_at = datetime.now(timezone.utc)
-    db.session.commit()
-
-  return resp
+  if not s or not s.user:
+    return {"user": None}, 200
+  
+  user = s.user
+  return {"user": {"id": str(user.id), "email": user.email, "name": user.name}}, 200
