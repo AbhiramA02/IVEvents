@@ -114,3 +114,23 @@ def auth_me():
             "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
         }
     }, 200
+
+@auth_bp.post("/logout")
+def logout():
+  session_id = request.cookies.get("session_id")
+  if session_id:
+    Session.query.filter_by(id=session_id).delete()
+    db.session.commit()
+
+  resp = make_response({"ok": True})
+  resp.set_cookie(
+     "session_id",
+     "",
+     max_age=0,
+     path="/",
+     secure=True,
+     httponly=True,
+     samesite="Lax",
+  )
+  return resp
+   

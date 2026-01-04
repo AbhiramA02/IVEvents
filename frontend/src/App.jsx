@@ -35,6 +35,15 @@ export default function App() {
       });
   }, []);
 
+  const logout = () => {
+    fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    }).then(() => {
+      setUser(null);
+    })
+  }
+
   return (
     <div style={{ fontFamily: "system-ui", padding: 24 }}>
       <h1>IV Events</h1>
@@ -43,7 +52,15 @@ export default function App() {
       <div style={{ marginBottom: 8, opacity: 0.8 }}>{status}</div>
 
       {user ? (
-        <div>Logged in as {user.email}.</div>
+        <div>
+          <div>Logged in as {user.email}.</div>
+          <button 
+          onClick={logout}
+          style={{marginTop: 12}}
+          >
+            Logout
+          </button>
+        </div>
       ) : (
         <>
           <div>Not logged in.</div>
