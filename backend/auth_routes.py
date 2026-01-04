@@ -70,22 +70,23 @@ def google_callback(): #Handler to redirect back to app after Login
 @auth_bp.post("/logout")
 def logout(): #For User Logouts 
   session_id = request.cookies.get("session_id")
-  resp = make_response({"ok": True})
+
+  if session_id:
+    try:
+      session_uuid = uuid.UUID(session_id)
+      s = Session.query.filter_by(id=session_uuid, revoked_at=None).first()
+      if s:
+        s.revoked_at = datetime.now(timezone.utc)
+        db.session.commit()
+    except ValueError:
+      pass
+
+  resp = make_response(jsonify({"ok": True}))
 
   resp.delete_cookie("session_id", path="/")
-
-  if not session_id:
-    return resp
-  
-  try:
-    session_uuid = uuid.UUID(session_id)
-  except ValueError:
-    return resp
-  
-  s = Session.query.filter_by(id=session_uuid, revoked_at=None).first()
-  if s:
-    s.revoked_at = datetime.now(timezone.utc)
-    db.session.commit()
+  resp.delete_cookie("session_id", path="/", secure=True, samesite="Lax")
+  resp.delete_cookie("session_id", path="/", domain="ivevents.abhiramagina.xyz")
+  resp.delete_cookie("session_id", path="/", domain=".abhiramagina.xyz")
 
   return resp
 
