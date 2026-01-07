@@ -26,7 +26,7 @@ def create_app():
   migrate.init_app(app, db)
 
   import models
-
+  from models import User, Session, Event, EventInterest
   from auth_routes import auth_bp, init_oauth
   init_oauth(app)
   app.register_blueprint(auth_bp)
