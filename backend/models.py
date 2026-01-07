@@ -38,3 +38,81 @@ class Session(db.Model):
       user_id = user_id,
       expires_at = utcnow() + timedelta(days = days),
     )
+  
+
+class Event(db.Model):
+  """This is a SQLAlchemy model representing ONE event listing - This is a 'Table'"""
+  __tablename__ = "events"
+
+  id = db.Column(db.Uuid, primary_key = True, default = uuid.uuid4) #Set Unique Integer ID for every row as Primary Key 
+  
+  title = db.Column(db.String(200), nullable = False) #Setting nullable = False indicates that this field is required
+  description = db.Column(db.Text, nullable = True)
+  location = db.Column(db.String(200), nullable = True)
+
+  start_time = db.Column( #When timezone = True, we expect timezone-aware datetimes
+    db.DateTime(timezone = True), 
+    nullable = False, 
+    index = True
+  )
+  end_time = db.Column(db.DateTime(timezone = True), nullable = False, index = True)
+  
+  organizer = db.Column(db.String(200), nullable = True)
+  category = db.Column(db.String(80), nullable = True)
+
+  image_url = db.Column(db.Text, nullable = True)
+  source = db.Column(db.String(40), nullable = False, default = "manual")
+
+  created_at = db.Column(
+    db.DateTime(timezone = True),
+    nullable = False,
+    default = utcnow,
+  )
+  updated_at = db.Column(
+    db.DateTime(timezone = True),
+    nullable = False,
+    default = utcnow,
+    onupdate = utcnow,
+  )
+
+  interests = db.relationship(
+    "EventInterest",
+    backref = "event",
+    cascade = "all, delete-orphan",
+  )
+
+  #Gaurdrail: end_time must be >= start_time
+  __table_args__ = (
+    db.CheckConstraint("end_time >= start_time", name = "ck_events_end_after_start")
+  )
+
+
+
+class EventInterest(db.Model):
+  """Join talbe that stores ONE user's interest status for ONE event"""
+  __tablename__ = "event_interests"
+
+  id = db.Column(db.Uuid, primary_key = True)
+
+  user_id = db.Column( #db.ForeignKey creates a link between event_interests and users, users.id must be existing to work
+    db.Uuid, #CASCADE is so when a user is deleted, their interest rows are deleted too
+    db.ForeignKey("users.id", ondelete = "CASCADE"),
+    nullable = False,
+  )
+
+  event_id = db.Column(
+    db.Uuid,
+    db.ForeignKey("events.id", ondelete = "CASCADE"),
+    nullable = False,
+  )
+
+  status = db.Column(db.String(20), nullable = False) #Interested or Not Interested
+
+  #we add the created_at and updated_at columns because they provide important insight and functionality down the road.
+  created_at = db.Column(db.DateTime(timezone = True), nullable = False, default = utcnow)
+  updated_at = db.Column(db.DateTime(timezone = True), nullable = False, default = utcnow, onupdate = utcnow)
+
+  __table_args__ = ( #Table-Level Constraints + Indexes
+    db.UniqueConstraint("user_id", "event_id", name = "uq_user_event_interest"), #Prevent duplicate rows for same user/event
+    db.Index("ix_event_interests_event_status", "event_id", "status") #Helpful index for fast counting
+  )
