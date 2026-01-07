@@ -83,7 +83,7 @@ class Event(db.Model):
 
   #Gaurdrail: end_time must be >= start_time
   __table_args__ = (
-    db.CheckConstraint("end_time >= start_time", name = "ck_events_end_after_start")
+    db.CheckConstraint("end_time >= start_time", name = "ck_events_end_after_start"),
   )
 
 
