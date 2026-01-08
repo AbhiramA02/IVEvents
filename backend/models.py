@@ -92,7 +92,7 @@ class EventInterest(db.Model):
   """Join talbe that stores ONE user's interest status for ONE event"""
   __tablename__ = "event_interests"
 
-  id = db.Column(db.Uuid, primary_key = True)
+  id = db.Column(db.Uuid, primary_key = True, default = uuid.uuid4)
 
   user_id = db.Column( #db.ForeignKey creates a link between event_interests and users, users.id must be existing to work
     db.Uuid, #CASCADE is so when a user is deleted, their interest rows are deleted too
