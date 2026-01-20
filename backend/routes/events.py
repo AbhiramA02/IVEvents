@@ -1,14 +1,33 @@
 from flask import Blueprint, jsonify, request
+import uuid
 from sqlalchemy import func
 from extensions import db
-from models import Event, EventInterest
+from models import Event, EventInterest, Session
 from serializers import event_to_dict
 
 events_bp = Blueprint("events", __name__)
 
-def get_current_user_id():
-  return None
+def get_current_user_id(): #Follows similar structure to /me authentication route
+  session_id = request.cookies.get("session_id") #Read the session_id cookie that was set during Google login
+  
+  #If there's no cookie, the viewer is not logged in
+  if not session_id: 
+    return None
+  
+  #Convert the cookie string to a UUID; if invalid, treat as logged out.
+  try:
+    session_uuid = uuid.UUID(session_id)
+  except ValueError:
+    return None
+  
+  #Look up the session in the DB, making sure it has not been revoked.
+  s = Session.query.filter_by(id=session_uuid, revoked_at=None).first()
 
+  #If the session doesn't exist or doesn't map to a real user, treat as logged out.
+  if not s or not s.user:
+    return None
+  
+  return s.user.id #Get the UUID of the logged-in user (same as /me endpoint returns).
 
 @events_bp.get("/events")
 def list_events():
@@ -62,3 +81,9 @@ def list_events():
   ]
 
   return jsonify({"events": payload}), 200
+
+
+@events_bp.get("/debug/whoami")
+def debug_whoami():
+  user_id = get_current_user_id() #Use same helper your /events endpoint uses
+  return jsonify({"user_id": str(user_id) if user_id else None}), 200 #Return user_id so you can confirm whether login is recognized
