@@ -28,8 +28,10 @@ def create_app():
   import models
   from models import User, Session, Event, EventInterest
   from auth_routes import auth_bp, init_oauth
+  from routes.events import events_bp
   init_oauth(app)
   app.register_blueprint(auth_bp)
+  app.register_blueprint(events_bp)
 
   @app.get("/health")
   def health():
