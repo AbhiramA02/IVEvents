@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 import uuid
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from extensions import db
 from models import Event, EventInterest, Session
 from serializers import event_to_dict
@@ -82,6 +83,84 @@ def list_events():
 
   return jsonify({"events": payload}), 200
 
+@events_bp.route("/events/<int:event_id>/interest", methods=["POST"]) #Lets currently logged-in user toggle interest for event.
+def add_interest(event_id):
+  """
+  Marks interest for the currently logged-in user on the given event.
+  Idempotent Behaviour:
+  - If the user already marked interest, we return success without creating a duplicate row.
+  """
+
+  #Identify which user is logged in via session cookie helper
+  user_id = get_current_user_id()
+  if not user_id:
+    return jsonify({"error": "Not authenticated"}), 401
+  
+  #Ensure the event exists
+  event = Event.query.get(event_id)
+  if not event:
+    return jsonify({"error": "Event not found"}), 404
+  
+  #Look up the specific interest row for this (user, event)
+  existing = EventInterest.query.filter_by(user_id=user_id, event_id=event_id).first()
+  if existing:
+    count = EventInterest.query.filter_by(event_id=event_id).count()
+
+    return jsonify({
+      "event_id": event_id,
+      "viewer_interested": True,
+      "interest_count": count
+    }), 200
+  
+  db.session.add(EventInterest(
+    user_id=user_id,
+    event_id=event_id
+  ))
+
+  try:
+    db.session.commit()
+  except IntegrityError:
+    db.session.rollback()
+
+  count = EventInterest.query.filter_by(event_id=event_id).count()
+
+  return jsonify({
+    "event_id": event_id,
+    "viewer_interested": True,
+    "interest_count": count
+  }), 201
+
+@events_bp.route("/events/<int:event_id>/interest", methods=["DELETE"])
+def remove_interest(event_id):
+  """
+  Unmarks interest for the currently logged-in user on the given event.
+  Idempotent Behaviour:
+  - If the user wasn't interested, return success anyway (no error).
+  """
+
+  #Identify which user is logged in via session cookie helper
+  user_id = get_current_user_id()
+  if not user_id:
+    return jsonify({"error": "Not authenticated"}), 401
+  
+  #Ensure the event exists
+  event = Event.query.get(event_id)
+  if not event:
+    return jsonify({"error": "Event not found"}), 404
+  
+  #Look up the specific interest row for this (user, event)
+  existing = EventInterest.query.filter_by(user_id=user_id, event_id=event_id).first()
+  if existing:
+    db.session.delete(existing)
+    db.session.commit()
+
+  count = EventInterest.query.filter_by(event_id=event_id).count()
+
+  return jsonify({
+    "event_id": event_id,
+    "viewer_interested": False,
+    "interest_count": count
+  }), 200
 
 @events_bp.get("/debug/whoami")
 def debug_whoami():

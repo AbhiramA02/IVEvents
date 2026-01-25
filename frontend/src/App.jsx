@@ -4,7 +4,7 @@ import "./App.css";
 function AuthButtons() {
   const startGoogle = () => {
     // full redirect to backend start endpoint
-    window.location.href = "/api/auth/google/start";
+    window.location.href = "/auth/google/start";
   };
 
   return (
@@ -19,7 +19,7 @@ export default function App() {
   //const [status, setStatus] = useState("Checking session...");
 
   useEffect(() => {
-    fetch("/api/me", { credentials: "include" })
+    fetch("/auth/me", { credentials: "include" })
       .then(async (r) => {
         const data = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(data?.error || `HTTP ${r.status}`);
@@ -36,7 +36,7 @@ export default function App() {
   }, []);
 
   const logout = () => {
-    fetch("/api/auth/logout", {
+    fetch("/auth/logout", {
       method: "POST",
       credentials: "include",
     }).then(() => {
@@ -48,8 +48,6 @@ export default function App() {
     <div style={{ fontFamily: "system-ui", padding: 24 }}>
       <h1>IV Events</h1>
       <p>See what's going on in and around UC Santa Barbara!</p>
-
-      <div style={{ marginBottom: 8, opacity: 0.8 }}>{status}</div>
 
       {user ? (
         <div>
