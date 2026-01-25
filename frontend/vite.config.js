@@ -11,7 +11,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      "/me": {
+      "/events": {
         target: "http://localhost:5002",
         changeOrigin: true,
         secure: false,

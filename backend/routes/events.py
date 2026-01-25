@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-import uuid
+import uuid #Used to validate + parse UUID strings into UUID objects
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from extensions import db
@@ -83,7 +83,7 @@ def list_events():
 
   return jsonify({"events": payload}), 200
 
-@events_bp.route("/events/<int:event_id>/interest", methods=["POST"]) #Lets currently logged-in user toggle interest for event.
+@events_bp.route("/events/<event_id>/interest", methods=["POST"]) #Lets currently logged-in user toggle interest for event.
 def add_interest(event_id):
   """
   Marks interest for the currently logged-in user on the given event.
@@ -96,25 +96,32 @@ def add_interest(event_id):
   if not user_id:
     return jsonify({"error": "Not authenticated"}), 401
   
+  #Convert the URL string to a UUID object (and validate format)
+  try:
+    event_uuid = uuid.UUID(event_id)
+  except ValueError:
+    return jsonify({"error": "Invalid event id"}), 400
+  
   #Ensure the event exists
-  event = Event.query.get(event_id)
+  event = Event.query.get(event_uuid)
   if not event:
     return jsonify({"error": "Event not found"}), 404
   
   #Look up the specific interest row for this (user, event)
-  existing = EventInterest.query.filter_by(user_id=user_id, event_id=event_id).first()
+  existing = EventInterest.query.filter_by(user_id=user_id, event_id=event_uuid).first()
   if existing:
-    count = EventInterest.query.filter_by(event_id=event_id).count()
+    count = EventInterest.query.filter_by(event_id=event_uuid, status="interested").count()
 
     return jsonify({
-      "event_id": event_id,
-      "viewer_interested": True,
+      "event_id": str(event_uuid),
+      "viewer_interest": "interested",
       "interest_count": count
     }), 200
   
   db.session.add(EventInterest(
     user_id=user_id,
-    event_id=event_id
+    event_id=event_uuid,
+    status="interested"
   ))
 
   try:
@@ -122,15 +129,15 @@ def add_interest(event_id):
   except IntegrityError:
     db.session.rollback()
 
-  count = EventInterest.query.filter_by(event_id=event_id).count()
+  count = EventInterest.query.filter_by(event_id=event_uuid, status="interested").count()
 
   return jsonify({
-    "event_id": event_id,
-    "viewer_interested": True,
+    "event_id": str(event_uuid),
+    "viewer_interest": "interested",
     "interest_count": count
   }), 201
 
-@events_bp.route("/events/<int:event_id>/interest", methods=["DELETE"])
+@events_bp.route("/events/<event_id>/interest", methods=["DELETE"])
 def remove_interest(event_id):
   """
   Unmarks interest for the currently logged-in user on the given event.
@@ -143,22 +150,28 @@ def remove_interest(event_id):
   if not user_id:
     return jsonify({"error": "Not authenticated"}), 401
   
+  #Convert the URL string to a UUID object (and validate format)
+  try:
+    event_uuid = uuid.UUID(event_id)
+  except ValueError:
+    return jsonify({"error": "Invalid event id"}), 400
+  
   #Ensure the event exists
-  event = Event.query.get(event_id)
+  event = Event.query.get(event_uuid)
   if not event:
     return jsonify({"error": "Event not found"}), 404
   
   #Look up the specific interest row for this (user, event)
-  existing = EventInterest.query.filter_by(user_id=user_id, event_id=event_id).first()
+  existing = EventInterest.query.filter_by(user_id=user_id, event_id=event_uuid).first()
   if existing:
     db.session.delete(existing)
     db.session.commit()
 
-  count = EventInterest.query.filter_by(event_id=event_id).count()
+  count = EventInterest.query.filter_by(event_id=event_uuid, status="interested").count()
 
   return jsonify({
-    "event_id": event_id,
-    "viewer_interested": False,
+    "event_id": str(event_uuid),
+    "viewer_interest": None,
     "interest_count": count
   }), 200
 
