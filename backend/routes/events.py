@@ -48,7 +48,7 @@ def list_events():
   count_rows = ( # 1. Count "interested" per event
     db.session.query(
       EventInterest.event_id,
-      func.count().label("cnt")
+      func.count(EventInterest.id).label("cnt")
     )
     .filter(EventInterest.event_id.in_(event_ids))
     .filter(EventInterest.status == "interested")
@@ -58,29 +58,25 @@ def list_events():
 
   counts_map = {row.event_id: row.cnt for row in count_rows}
 
-
-  viewer_map = {} # 2. Compute viewer_interest per event (only for the current user)
-
+  viewer_ids = set()
   if user_id:
     viewer_rows = (
-      db.session.query(EventInterest.event_id, EventInterest.status)
+      db.session.query(EventInterest.event_id)
       .filter(EventInterest.user_id == user_id)
       .filter(EventInterest.event_id.in_(event_ids))
+      .filter(EventInterest.status == "interested")
       .all()
     )
+    viewer_ids = {row.event_id for row in viewer_rows}
 
-    viewer_map = {row.event_id: row.status for row in viewer_rows}
-  
-  
-  payload = [ # 3. Build the final JSON response list
+  payload = [
     event_to_dict(
       e,
-      interest_count = counts_map.get(e.id, 0),
-      viewer_interest = viewer_map.get(e.id),
+      interest_count=counts_map.get(e.id, 0),
+      viewer_interest=("interested" if e.id in viewer_ids else None) if user_id else None,
     )
     for e in events
   ]
-
   return jsonify({"events": payload}), 200
 
 @events_bp.route("/events/<event_id>/interest", methods=["POST"]) #Lets currently logged-in user toggle interest for event.

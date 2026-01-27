@@ -139,9 +139,12 @@ export default function App() {
               Interest Count: {e.interest_count ?? 0}
             </div>
 
-            <div style = {{marginTop: 6, opacity: 0.85}}>
+            <button onClick={() => alert("Clicked!")}>
+              Interested
+            </button>
+            {/*<div style = {{marginTop: 6, opacity: 0.85}}>
               Your Interest: {e.viewer_interest ?? "none"}
-            </div>
+            </div>*/}
           </div>
         ))}
       </div>
