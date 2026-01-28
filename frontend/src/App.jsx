@@ -74,6 +74,77 @@ export default function App() {
     })
   }
 
+  /**
+   * Update interest status for given event
+   * If  `shouldBeInterested` is true: POST /events/<event_id>/interest
+   * Else DELETE /events/<event_id>/interest
+   * 
+   * The backend returns: {event_id, viewer_interest, interest_count}
+   */
+
+  const setInterest = async (eventId, shouldBeInterested) => {
+    const method = shouldBeInterested ? "POST" : "DELETE";
+
+    const res = await fetch(`/events/${eventId}/interest`, {
+      method,
+      credentials: "include",
+    });
+
+    //If user isn't logged in, backend returns 401
+    if (res.status === 401) {
+      alert("Please log in to mark interest.");
+      return null;
+    }
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Interest update failed:", res.status, text);
+      alert("Could not update interest. Try again.");
+      return null;
+    }
+
+    return await res.json();
+  };
+
+  /**
+   * When user clicks the Interested button:
+   * Decide whether we are turning interest on or off based on current state
+   * Call the backend endpoint
+   * Update the matching event card in state with returned count + viewer_interest
+   */
+
+  const onInterestedClick = async (eventObj) => {
+    //Prevent spamming the same button while request in flight
+    if (toggling[eventObj.id]) return;
+
+    //Determine current interest state for this viewer
+    const currentlyInterested = eventObj.viewer_interest === "interested";
+    const shouldBeInterested = !currentlyInterested;
+
+    //Mark this event as "toggling" to disable the button temporarily
+    setToggling((prev) => ({ ...prev, [eventObj.id]: true}));
+
+    try {
+      const data = await setInterest(eventObj.id, shouldBeInterested);
+      if (!data) return;
+
+      setEvents((prev) => 
+        prev.map((e) => 
+          e.id === data.event_id
+          ? {
+            ...e,
+            viewer_interest: data.viewer_interest,
+            interest_count: data.interest_count,
+          }
+          : e
+        )
+      );
+    } finally {
+      //Always clear toggling state even if request failed
+      setToggling((prev) => ({ ...prev, [eventObj.id]: false}));
+    }
+  };
+
   return (
     <div style={{ fontFamily: "system-ui", padding: 24 }}>
       <h1>IV Events</h1>
@@ -139,9 +210,13 @@ export default function App() {
               Interest Count: {e.interest_count ?? 0}
             </div>
 
-            <button onClick={() => alert("Clicked!")}>
-              Interested
+            <button onClick={() => onInterestedClick(e)}
+            disabled = {!!toggling[e.id]}
+            style={{marginTop : 10}}>
+              {e.viewer_interest === "interested" ? "Interested ✓" : "Interested"}
             </button>
+
+
             {/*<div style = {{marginTop: 6, opacity: 0.85}}>
               Your Interest: {e.viewer_interest ?? "none"}
             </div>*/}

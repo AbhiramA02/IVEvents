@@ -8,6 +8,9 @@ from serializers import event_to_dict
 
 events_bp = Blueprint("events", __name__)
 
+STATUS_INTERESTED = "interested"
+STATUS_NOT_INTERESTED = "not_interested"
+
 def get_current_user_id(): #Follows similar structure to /me authentication route
   session_id = request.cookies.get("session_id") #Read the session_id cookie that was set during Google login
   
@@ -51,7 +54,7 @@ def list_events():
       func.count(EventInterest.id).label("cnt")
     )
     .filter(EventInterest.event_id.in_(event_ids))
-    .filter(EventInterest.status == "interested")
+    .filter(EventInterest.status == STATUS_INTERESTED)
     .group_by(EventInterest.event_id)
     .all()
   )
@@ -64,7 +67,7 @@ def list_events():
       db.session.query(EventInterest.event_id)
       .filter(EventInterest.user_id == user_id)
       .filter(EventInterest.event_id.in_(event_ids))
-      .filter(EventInterest.status == "interested")
+      .filter(EventInterest.status == STATUS_INTERESTED)
       .all()
     )
     viewer_ids = {row.event_id for row in viewer_rows}
@@ -73,7 +76,7 @@ def list_events():
     event_to_dict(
       e,
       interest_count=counts_map.get(e.id, 0),
-      viewer_interest=("interested" if e.id in viewer_ids else None) if user_id else None,
+      viewer_interest=(STATUS_INTERESTED if e.id in viewer_ids else None) if user_id else None,
     )
     for e in events
   ]
@@ -104,20 +107,20 @@ def add_interest(event_id):
     return jsonify({"error": "Event not found"}), 404
   
   #Look up the specific interest row for this (user, event)
-  existing = EventInterest.query.filter_by(user_id=user_id, event_id=event_uuid).first()
+  existing = EventInterest.query.filter_by(user_id=user_id, event_id=event_uuid, status = STATUS_INTERESTED).first()
   if existing:
-    count = EventInterest.query.filter_by(event_id=event_uuid, status="interested").count()
+    count = EventInterest.query.filter_by(event_id=event_uuid, status=STATUS_INTERESTED).count()
 
     return jsonify({
       "event_id": str(event_uuid),
-      "viewer_interest": "interested",
+      "viewer_interest": STATUS_INTERESTED,
       "interest_count": count
     }), 200
   
   db.session.add(EventInterest(
     user_id=user_id,
     event_id=event_uuid,
-    status="interested"
+    status=STATUS_INTERESTED
   ))
 
   try:
@@ -125,11 +128,11 @@ def add_interest(event_id):
   except IntegrityError:
     db.session.rollback()
 
-  count = EventInterest.query.filter_by(event_id=event_uuid, status="interested").count()
+  count = EventInterest.query.filter_by(event_id=event_uuid, status=STATUS_INTERESTED).count()
 
   return jsonify({
     "event_id": str(event_uuid),
-    "viewer_interest": "interested",
+    "viewer_interest": STATUS_INTERESTED,
     "interest_count": count
   }), 201
 
@@ -158,12 +161,12 @@ def remove_interest(event_id):
     return jsonify({"error": "Event not found"}), 404
   
   #Look up the specific interest row for this (user, event)
-  existing = EventInterest.query.filter_by(user_id=user_id, event_id=event_uuid).first()
+  existing = EventInterest.query.filter_by(user_id=user_id, event_id=event_uuid, status = STATUS_INTERESTED).first()
   if existing:
     db.session.delete(existing)
     db.session.commit()
 
-  count = EventInterest.query.filter_by(event_id=event_uuid, status="interested").count()
+  count = EventInterest.query.filter_by(event_id=event_uuid, status=STATUS_INTERESTED).count()
 
   return jsonify({
     "event_id": str(event_uuid),

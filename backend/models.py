@@ -106,7 +106,7 @@ class EventInterest(db.Model):
     nullable = False,
   )
 
-  status = db.Column(db.String(20), nullable = False) #Interested or Not Interested
+  status = db.Column(db.String(20), nullable = False, default = "interested") #Interested or Not Interested
 
   #we add the created_at and updated_at columns because they provide important insight and functionality down the road.
   created_at = db.Column(db.DateTime(timezone = True), nullable = False, default = utcnow)
