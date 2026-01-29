@@ -62,6 +62,7 @@ class Event(db.Model):
 
   image_url = db.Column(db.Text, nullable = True)
   source = db.Column(db.String(40), nullable = False, default = "manual")
+  external_id = db.Column(db.String(255), unique = True, index = True, nullable = True) #A stable unique identifier for imported/demo/scraped events
 
   created_at = db.Column(
     db.DateTime(timezone = True),
